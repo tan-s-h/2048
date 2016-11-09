@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+
+    <script src="TweenMax.min.js"></script>
+    <meta charset="utf-8"/>
+    <style type="text/css">
+        #gridPanel {
+            width: 480px;
+            height: 480px;
+            margin: 0 auto;
+            background-color: #336699;
+            border-radius: 24px;
+            position: relative;
+        }
+
+        .grid, .cell {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+        }
+
+        .grid {
+            background-color: #479AC7;
+            margin: 16px 0 0 16px;
+            float: left;
+        }
+
+        .cell {
+            position: absolute;
+            text-align: center;
+            line-height: 100px;
+            font-size: 60px;
+        }
+
+        #c00, #c01, #c02, #c03 {
+            top: 16px;
+        }
+
+        #c10, #c11, #c12, #c13 {
+            top: 132px;
+        }
+
+        #c20, #c21, #c22, #c23 {
+            top: 248px;
+        }
+
+        #c30, #c31, #c32, #c33 {
+            top: 364px;
+        }
+
+        #c00, #c10, #c20, #c30 {
+            left: 16px;
+        }
+
+        #c01, #c11, #c21, #c31 {
+            left: 132px;
+        }
+
+        #c02, #c12, #c22, #c32 {
+            left: 248px;
+        }
+
+        #c03, #c13, #c23, #c33 {
+            left: 364px;
+        }
+
+        .n2 {
+            background-color: #eee3da
+        }
+
+        .n4 {
+            background-color: #ede0c8
+        }
+
+        .n8 {
+            background-color: #f2b179
+        }
+
+        .n16 {
+            background-color: #f59563
+        }
+
+        .n32 {
+            background-color: #f67c5f
+        }
+
+        .n64 {
+            background-color: #f65e3b
+        }
+
+        .n128 {
+            background-color: #edcf72
+        }
+
+        .n256 {
+            background-color: #edcc61
+        }
+
+        .n512 {
+            background-color: #9c0
+        }
+
+        .n1024 {
+            background-color: #33b5e5
+        }
+
+        .n2048 {
+            background-color: #09c
+        }
+
+        .n4096 {
+            background-color: #a6c
+        }
+
+        .n8192 {
+            background-color: #93c
+        }
+
+        .n8, .n16, .n32, .n64,
+        .n128, .n256, .n512,
+        .n1024, .n2048, .n4096, .n8192 {
+            color: #fff
+        }
+
+        .n1024, .n2048, .n4096, .n8192 {
+            font-size: 40px
+        }
+
+        p {
+            width: 480px;
+            margin: 0 auto;
+            font-family: Arial, serif;
+            font-weight: bold;
+            font-size: 40px;
+            padding-top: 15px;
+        }
+        #gameOver {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+        }
+        #gameOver > div {
+            width: 100%;
+            height: 100%;
+            background-color: #555;
+            opacity: .5;
+        }
+        #gameOver > p {
+            width: 300px;
+            height: 200px;
+            border: 1px solid #edcf72;
+            line-height: 1.6em;
+            text-align: center;
+            background-color: #fff;
+            border-radius: 10px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -135px;
+            margin-left: -150px;
+        }
+
+        .button {
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #9f8b77;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+
+    <script type="text/javascript">
+        var game = {
+            data: [],//二维数组
+            rn: 4, //总行数
+            cn: 4, //总列数
+            state: 0, //游戏当前状态
+            RUNNING: 1,
+            GAMEOVER: 0,
+            score: 0, //分数
+            //判断游戏状态为结束
+            isGameOver: function () {
+                if (!this.isFull()) {
+                    return false;
+                } else {
+                    for (var row = 0; row < this.rn; row++) {
+                        for (var col = 0; col < this.cn; col++) {
+                            if (col < this.cn - 1) {
+                                if (this.data[row][col] ==
+                                        this.data[row][col + 1]) {
+                                    return false;
+                                }
+                            }
+                            if (row < this.rn - 1) {
+                                if (this.data[row][col] ==
+                                        this.data[row + 1][col]) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    return true;
+                }
+            },
+            //游戏开始
+            start: function () {
+                this.state = this.RUNNING;
+                var gameOver = document.getElementById("gameOver");
+                gameOver.style.display = "none";
+                this.data = [//初始化二维数组
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0]
+                ];
+                this.score = 0; 
+                this.randomNum();
+                this.randomNum();
+                this.updateView();
+            },
+            isFull: function () {
+                for (var row = 0; row < this.rn; row++) {
+                    for (var col = 0; col < this.cn; col++) {
+                        if (this.data[row][col] == 0) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            },
+            //在随机空位置生成一个数
+            randomNum: function () {
+                if (!this.isFull()) {
+                    while (true) {
+                        var row = parseInt(Math.random() * this.rn);
+                        var col = parseInt(Math.random() * this.cn);
+                        if (this.data[row][col] == 0) {
+                            this.data[row][col] =
+                                    Math.random() < 0.5 ? 2 : 4;
+                            break;
+                        }
+                    }
+                }
+            },
+   //将二维数组中每个格的数字放入格中
+            updateView: function () {       
+                for (var row = 0; row < this.rn; row++) {
+                    for (var col = 0; col < this.cn; col++) {
+                        var div = document.getElementById("c" + row + col);
+                        var curr = this.data[row][col]; 
+                        div.innerHTML = curr != 0 ? curr : "";
+                        div.className = curr != 0 ? "cell n" + curr : "cell"
+                    }
+                }
+                var score = document.getElementById("score");
+                score.innerHTML = this.score;
+
+                //修改游戏状态为GAMEOVER
+                if (this.isGameOver()) {
+                    this.state = this.GAMEOVER;
+                    var gameOver = document.getElementById("gameOver");
+                    var finalScore = document.getElementById("finalScore");
+                    finalScore.innerHTML = this.score;
+                    gameOver.style.display = "block";
+                }
+
+            },
+
+     
+            getRightNext: function (row, col) {
+                for (var nextc = col + 1; nextc < this.cn; nextc++) {
+                    if (this.data[row][nextc] != 0) {
+                        return nextc;
+                    }
+                }
+                return -1;
+            },
+
+            /*判断并左移*指定行*中的每个元素*/
+            moveLeftInRow: function (row) {
+                for (var col = 0; col < this.cn - 1; col++) {
+                    var nextc = this.getRightNext(row, col);
+                    if (nextc == -1) {
+                        break;
+                    } else {
+                        if (this.data[row][col] == 0) {
+                            this.data[row][col] =
+                                    this.data[row][nextc];
+                            this.data[row][nextc] = 0;
+                            col--;
+                        } else if (this.data[row][col] ==
+                                this.data[row][nextc]) {
+                            this.data[row][col] *= 2;
+                            TweenMax.from('#c' + row + col, 0.5, {
+                                opacity: 0,
+                                scale: 0,
+                                ease: Bounce.easeOut,
+                                rotation: 360
+                            });
+
+                            this.data[row][nextc] = 0;
+                            this.score += this.data[row][col];
+                        }
+                    }
+                }
+            },
+            /*移动所有行*/
+            moveLeft: function () {
+                var oldStr = this.data.toString();
+                for (var row = 0; row < this.rn; row++) {
+                    this.moveLeftInRow(row);
+                }
+                var newStr = this.data.toString();
+                if (oldStr != newStr) {
+                    this.randomNum();
+                    this.updateView();
+                }
+            },
+            moveRight: function () {
+                var oldStr = this.data.toString();
+                for (var row = 0; row < this.rn; row++) {
+                    this.moveRightInRow(row);
+                }
+                var newStr = this.data.toString();
+                if (oldStr != newStr) {
+                    this.randomNum();
+                    this.updateView();
+                }
+            },
+            /*判断并右移*指定行*中的每个元素*/
+            moveRightInRow: function (row) {
+                for (var col = this.cn - 1; col > 0; col--) {
+                    var nextc = this.getLeftNext(row, col);
+                    if (nextc == -1) {
+                        break;
+                    } else {
+                        if (this.data[row][col] == 0) {
+                            this.data[row][col] =
+                                    this.data[row][nextc];
+                            this.data[row][nextc] = 0;
+                            col++;
+                        } else if (this.data[row][col] ==
+                                this.data[row][nextc]) {
+                            this.data[row][col] *= 2;
+                            TweenMax.from('#c' + row + col, 0.5, {
+                                opacity: 0,
+                                scale: 0,
+                                ease: Bounce.easeOut,
+                                rotation: 360
+                            })
+                            this.data[row][nextc] = 0;
+                            this.score += this.data[row][col];
+                        }
+                    }
+                }
+            },
+            /*找当前位置左侧，下一个不为0的数*/
+            getLeftNext: function (row, col) {
+                for (var nextc = col - 1; nextc >= 0; nextc--) {
+                    if (this.data[row][nextc] != 0) {
+                        return nextc;
+                    }
+                }
+                return -1;
+            },
+            /*获得任意位置下方不为0的位置*/
+            getDownNext: function (row, col) {
+                for (var nextr = row + 1; nextr < this.rn; nextr++) {
+                    if (this.data[nextr][col] != 0) {
+                        return nextr;
+                    }
+                }
+                return -1;
+            },
+            /*判断并上移*指定列*中的每个元素*/
+            moveUpInCol: function (col) {
+                for (var row = 0; row < this.rn - 1; row++) {
+                    var nextr = this.getDownNext(row, col);
+                    if (nextr == -1) {
+                        break; 
+                    } else {
+                        if (this.data[row][col] == 0) {
+                            
+                            this.data[row][col] =
+                                    this.data[nextr][col];
+                    
+                            this.data[nextr][col] = 0;
+                            row--;
+                        } else if (this.data[row][col] ==
+                                this.data[nextr][col]) {
+                           
+                            this.data[row][col] *= 2;
+                            TweenMax.from('#c' + row + col, 0.5, {
+                                opacity: 0,
+                                scale: 0,
+                                ease: Bounce.easeOut,
+                                rotation: 360
+                            })
+
+           
+                            this.data[nextr][col] = 0;
+ 
+                            this.score += this.data[row][col];
+                        }
+                    }
+                }
+            },
+            /*上移所有列*/
+            moveUp: function () {
+                var oldStr = this.data.toString();
+
+                for (var col = 0; col < this.cn; this.moveUpInCol(col++));
+                var newStr = this.data.toString();
+                if (oldStr != newStr) {
+                    this.randomNum();
+                    this.updateView();
+                }
+            },
+            /*下移所有列*/
+            moveDown: function () {
+                var oldStr = this.data.toString();
+                for (var col = 0; col < this.cn; this.moveDownInCol(col++));
+                var newStr = this.data.toString();
+                if (oldStr != newStr) {
+                    this.randomNum();
+                    this.updateView();
+                }
+            },
+            moveDownInCol: function (col) {
+
+                for (var row = this.rn - 1; row > 0; row--) {
+                    var nextr = this.getUpNext(row, col);
+                    if (nextr == -1) {
+                        break;
+                    } else {
+                        if (this.data[row][col] == 0) {
+                            this.data[row][col] =
+                                    this.data[nextr][col];
+                            this.data[nextr][col] = 0;
+                            row++;
+                        } else if (this.data[row][col] ==
+                                this.data[nextr][col]) {
+                            this.data[row][col] *= 2;
+                            TweenMax.from('#c' + row + col, 0.5, {
+                                opacity: 0,
+                                scale: 0,
+                                ease: Bounce.easeOut,
+                                rotation: 360
+                            });
+                            this.data[nextr][col] = 0;
+                            this.score += this.data[row][col];
+                        }
+                    }
+                }
+            },
+            /*获得任意位置上方不为0的位置*/
+            getUpNext: function (row, col) {
+                for (var nextr = row - 1; nextr >= 0; nextr--) {
+                    if (this.data[nextr][col] != 0) {
+                        return nextr;
+                    }
+                }
+                return -1;
+            }
+        };
+        //页面加载*后*自动执行
+        window.onload = function () {
+            game.start();
+            document.onkeydown = function () {                
+                if (game.state == game.RUNNING) {
+                    var e = window.event || arguments[0];
+                    if (e.keyCode == 37) {
+                        game.moveLeft();
+                    } else if (e.keyCode == 39) {
+                        game.moveRight();
+                    } else if (e.keyCode == 38) {
+                        game.moveUp();
+                    } else if (e.keyCode == 40) {
+                        game.moveDown();
+                    }
+                }
+            }
+        }
+    </script>
+
+</head>
+<body>
+<p>Score:<span id="score"></span></p>
+<div id="gridPanel">
+
+    <!--第1行-->
+    <div id="g00" class="grid"></div>
+    <div id="g01" class="grid"></div>
+    <div id="g02" class="grid"></div>
+    <div id="g03" class="grid"></div>
+    <!--第2行-->
+    <div id="g10" class="grid"></div>
+    <div id="g11" class="grid"></div>
+    <div id="g12" class="grid"></div>
+    <div id="g13" class="grid"></div>
+    <!--第3行-->
+    <div id="g20" class="grid"></div>
+    <div id="g21" class="grid"></div>
+    <div id="g22" class="grid"></div>
+    <div id="g23" class="grid"></div>
+    <!--第4行-->
+    <div id="g30" class="grid"></div>
+    <div id="g31" class="grid"></div>
+    <div id="g32" class="grid"></div>
+    <div id="g33" class="grid"></div>
+
+
+    <!--第1行-->
+    <div id="c00" class="cell"></div>
+    <div id="c01" class="cell"></div>
+    <div id="c02" class="cell"></div>
+    <div id="c03" class="cell"></div>
+    <!--第2行-->
+    <div id="c10" class="cell"></div>
+    <div id="c11" class="cell"></div>
+    <div id="c12" class="cell"></div>
+    <div id="c13" class="cell"></div>
+    <!--第3行-->
+    <div id="c20" class="cell"></div>
+    <div id="c21" class="cell"></div>
+    <div id="c22" class="cell"></div>
+    <div id="c23" class="cell"></div>
+    <!--第4行-->
+    <div id="c30" class="cell"></div>
+    <div id="c31" class="cell"></div>
+    <div id="c32" class="cell"></div>
+    <div id="c33" class="cell"></div>
+</div>
+<div id="gameOver">
+    <div></div>
+    <p>
+        Game Over!<br>
+        Score:<span id="finalScore"></span><br>
+        <a class="button" onclick="game.start()">Try again!</a>
+    </p>
+</div>
+</body>
+</html>
